@@ -45,5 +45,5 @@ This is a web-based auxiliary tool designed specifically for Reliability Enginee
 ---
 
 ## 👨‍💻 作者 | Author
-**Lam** 可靠度工程師 (Reliability Engineer) | Flex  
+**Lam** 可靠度工程師 (Reliability Engineer)
 專長：環境試驗、可靠度標準分析 (MIL-STD-810, IEC, ISTA)
