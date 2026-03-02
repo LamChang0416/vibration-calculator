@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>專業振動測試設定 (Sine & Random)</title>
+    <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+    <style>
+        :root {
+            --bg-dark: #121826;
+            --panel-bg: #1e293b;
+            --text-light: #e2e8f0;
+            --accent-green: #00d284;
+            --input-bg: #0f172a;
+            --border-color: #334155;
+            --danger-red: #ef4444;
+            --text-muted: #cbd5e1;
+            --highlight-blue: #3b82f6;
+            --tab-bg: #0f172a;
+        }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: var(--bg-dark); color: var(--text-light); margin: 0; padding: 15px; }
+        
+        /* 標籤頁 (Tabs) 樣式 */
+        .tabs-container { display: flex; gap: 5px; margin-bottom: 20px; border-bottom: 2px solid var(--border-color); padding-bottom: 0px; }
+        .tab-btn {
+            background-color: var(--tab-bg); color: var(--text-muted); border: 1px solid var(--border-color); 
+            border-bottom: none; padding: 12px 25px; font-size: 16px; font-weight: bold; 
+            border-radius: 8px 8px 0 0; cursor: pointer; transition: 0.3s;
+        }
+        .tab-btn:hover { color: var(--text-light); background-color: var(--panel-bg); }
+        .tab-btn.active { background-color: var(--panel-bg); color: var(--accent-green); border-bottom: 3px solid var(--accent-green); }
+        
+        .tab-content { display: none; }
+        .tab-content.active { display: block; animation: fadeIn 0.3s; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        /* 通用元件樣式 */
+        .header { display: flex; justify-content: space-between; align-items: center; padding-bottom: 10px; margin-bottom: 15px; flex-wrap: wrap; gap: 15px; border-bottom: 2px solid var(--border-color);}
+        .header h2 { margin: 0; color: var(--highlight-blue); font-size: 1.4em;}
+        .pts-info { font-size: 1.1em; font-weight: bold; color: var(--text-muted); background: var(--input-bg); padding: 5px 12px; border-radius: 20px;}
+
+        select, .control-input {
+            background-color: var(--input-bg); color: #fff; 
+            border: 1px solid var(--highlight-blue); border-radius: 6px; 
+            padding: 8px 12px; font-weight: bold; font-size: 14px; outline: none; cursor: pointer;
+        }
+        select optgroup { color: var(--accent-green); font-style: normal; font-weight: bold; background-color: var(--panel-bg);}
+        select option { color: var(--text-light); font-weight: normal; background-color: var(--input-bg);}
+
+        .btn { padding: 8px 15px; border-radius: 6px; border: none; cursor: pointer; font-weight: bold; font-size: 14px; transition: 0.2s; color: white;}
+        .btn-primary { background-color: var(--highlight-blue); }
+        .btn-primary:hover { background-color: #2563eb; }
+        .btn-calc { background-color: #d97706; }
+        .btn-calc:hover { background-color: #b45309; }
+
+        .unit-toggle { display: flex; gap: 10px; margin-bottom: 15px; }
+        .unit-toggle button { background-color: transparent; border: 1px solid var(--accent-green); color: var(--accent-green); padding: 8px 15px; cursor: pointer; border-radius: 6px; font-weight: bold; font-size: 14px; transition: all 0.2s; }
+        .unit-toggle button.active { background-color: var(--accent-green); color: var(--bg-dark); box-shadow: 0 0 10px rgba(0, 210, 132, 0.4); }
+
+        .container { display: flex; flex-wrap: wrap; gap: 15px; }
+        .panel { background: var(--panel-bg); padding: 20px; border-radius: 8px; flex: 1; min-width: 300px; box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
+        
+        table { width: 100%; border-collapse: collapse; margin-bottom: 12px; table-layout: fixed; }
+        th { padding: 8px 4px; text-align: center; border-bottom: 2px solid var(--border-color); color: var(--text-muted); font-weight: bold; font-size: 0.95em; }
+        th.highlight { color: var(--highlight-blue); }
+        td { padding: 6px 4px; text-align: center; border-bottom: 1px solid var(--border-color); }
+        
+        input[type="number"] { width: 85%; padding: 8px; text-align: center; background-color: var(--input-bg); color: white; border: 1px solid var(--border-color); border-radius: 4px; font-family: monospace; font-size: 14px; }
+        input[type="number"]:disabled { opacity: 0.5; cursor: not-allowed; }
+        input[type="number"]:focus { outline: none; border-color: var(--accent-green); box-shadow: 0 0 5px rgba(0, 210, 132, 0.3); }
+
+        .btn-icon { background: transparent; border: 1px solid var(--danger-red); color: var(--danger-red); border-radius: 4px; width: 32px; height: 32px; cursor: pointer; font-weight: bold; font-size: 1.1em; transition: 0.2s; }
+        .btn-icon:hover { background: var(--danger-red); color: white; }
+        .btn-add { background-color: var(--highlight-blue); color: white; width: 100%; padding: 12px; border-radius: 6px; border: none; cursor: pointer; font-weight: bold; font-size: 16px; transition: 0.2s;}
+        .btn-add:hover { background-color: #2563eb; }
+        
+        .est-title { margin-top: 0; margin-bottom: 15px; color: var(--text-light); font-weight: bold; font-size: 1.2em; display: flex; align-items: center; gap: 8px;}
+        .est-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .est-item { background: var(--input-bg); padding: 15px; border-radius: 8px; position: relative; overflow: hidden; border: 1px solid var(--border-color);}
+        .est-item::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 5px; background-color: var(--accent-green); }
+        .est-item.time-calc::before { background-color: #d97706; }
+        .est-item .label { color: var(--text-muted); font-size: 0.85em; margin-bottom: 8px;}
+        .est-item .value-container { display: flex; align-items: baseline; gap: 5px; }
+        .est-item .value { font-size: 1.6em; font-weight: bold; color: var(--accent-green); }
+        .est-item.time-calc .value { color: #f59e0b; }
+        .est-item .unit { color: var(--text-muted); font-size: 0.9em; font-weight: normal;}
+        
+        .control-group { display: flex; gap: 10px; align-items: center; margin-bottom: 15px; flex-wrap: wrap;}
+        .control-group label { color: var(--text-muted); font-size: 0.9em; }
+
+        .plot-container { width: 100%; height: 350px; min-height: 250px; }
+    </style>
+</head>
+<body>
+
+    <div class="tabs-container">
+        <button class="tab-btn active" onclick="switchTab('tab-sine', this)">Sine (正弦振動)</button>
+        <button class="tab-btn" onclick="switchTab('tab-random', this)">Random (隨機 PSD)</button>
+    </div>
+
+    <div id="tab-sine" class="tab-content active">
+        <div class="header">
+            <h2>Sine 規格輸入</h2>
+            <div class="control-group" style="margin-bottom:0;">
+                <select id="sinePreset" onchange="loadSinePreset()">
+                    <option value="">📂 選擇 Sine 規範範例...</option>
+                    <option value="photo" selected>照片範例 (5Hz@2mm -> 100Hz@1g)</option>
+                    <option value="mil_std">MIL-STD-810 (基本運輸)</option>
+                    <option value="custom">自訂義</option>
+                </select>
+                <button class="btn btn-calc" onclick="calculateSineLogic()">⚡ 自動計算交接點與缺失值</button>
+            </div>
+        </div>
+
+        <div class="container">
+            <div class="panel">
+                <table id="sineTable">
+                    <thead>
+                        <tr>
+                            <th>Freq (Hz)</th>
+                            <th class="highlight">Accel (g Peak)</th>
+                            <th style="color:#f59e0b;">Disp (mm p-p)</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody id="sineTbody">
+                        </tbody>
+                </table>
+                <button class="btn-add" onclick="addSineRow()">＋ 新增頻率點</button>
+            </div>
+
+            <div class="panel">
+                <h3 class="est-title">⏱️ 掃頻時間設定與計算 (Sweep Time)</h3>
+                <div class="control-group">
+                    <label>掃頻速率:</label>
+                    <input type="number" id="sweepRate" class="control-input" value="1" step="0.1" style="width:70px;" oninput="updateSineTime()">
+                    <span style="color:var(--text-muted)">Oct/min</span>
+                    
+                    <label style="margin-left: 15px;">掃頻次數:</label>
+                    <input type="number" id="sweepCount" class="control-input" value="1" style="width:60px;" oninput="updateSineTime()">
+                    <span style="color:var(--text-muted)">Sweeps</span>
+                </div>
+                
+                <div class="est-grid" style="grid-template-columns: 1fr;">
+                    <div class="est-item time-calc">
+                        <div class="label">預估總測試時間 (Total Time)</div>
+                        <div class="value-container">
+                            <span class="value" id="sine-time-val">--</span>
+                        </div>
+                    </div>
+                </div>
+                <p style="color:var(--text-muted); font-size: 0.85em; margin-top: 15px;">
+                    *提示：如果輸入框留空，點擊「自動計算」系統會根據運動學公式 $A = \omega^2 X$ 補齊，並自動找出交接點(Crossover)。
+                </p>
+            </div>
+
+            <div class="panel" style="width: 100%;">
+                <div id="sinePlotArea" class="plot-container"></div>
+            </div>
+        </div>
+    </div>
+
+
+    <div id="tab-random" class="tab-content">
+        <div class="header">
+            <h2>Random 規格輸入</h2>
+            <div class="control-group" style="margin-bottom:0; flex-grow: 1;">
+                <select id="profileSelect" style="width:100%; max-width: 450px;" onchange="loadRandomProfile()">
+                    <option value="">📂 點擊這裡選擇 Random 測試規範範例...</option>
+                    <optgroup label="NEBS GR-63-CORE (電信網通)">
+                        <option value="gr63_trans">Transportation Vibration (2.21 Grms)</option>
+                    </optgroup>
+                    <optgroup label="MIL-STD-810G (美軍規)">
+                        <option value="mil_cat4_truck">Cat 4 - US Highway Truck (1.04 Grms)</option>
+                        <option value="mil_cat24_min">Cat 24 - Minimum Integrity (7.70 Grms)</option>
+                    </optgroup>
+                    <optgroup label="ISTA (國際安全運輸)">
+                        <option value="ista_3a_road">3A - Over-the-Road Trailer (0.53 Grms)</option>
+                        <option value="ista_6_amazon">6-Amazon.com - Type A/B OB (0.53 Grms)</option>
+                    </optgroup>
+                </select>
+            </div>
+            <div class="pts-info" id="ptsInfo">4 pts</div>
+        </div>
+
+        <div class="unit-toggle">
+            <button id="btn-unit-g" class="active" onclick="setRandomUnit('G')">g²/Hz</button>
+            <button id="btn-unit-ms2" onclick="setRandomUnit('ms2')">(m/s²)²/Hz</button>
+        </div>
+
+        <div class="container">
+            <div class="panel">
+                <table id="dataTable">
+                    <thead>
+                        <tr>
+                            <th style="width: 25%;">Freq (Hz)</th>
+                            <th class="highlight" style="width: 35%;" id="th-psd">Value (g²/Hz)</th>
+                            <th style="width: 25%;">Slope dB/Oct</th>
+                            <th style="width: 15%;"></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><input type="number" step="any" class="freq" value="20" oninput="handleRandomInput(this, 'freq')"></td>
+                            <td><input type="number" step="any" class="psd" value="0.0025" oninput="handleRandomInput(this, 'psd')"></td>
+                            <td><input type="number" step="any" class="slope" placeholder="N/A" disabled></td>
+                            <td></td>
+                        </tr>
+                        <tr>
+                            <td><input type="number" step="any" class="freq" value="80" oninput="handleRandomInput(this, 'freq')"></td>
+                            <td><input type="number" step="any" class="psd" value="0.01" oninput="handleRandomInput(this, 'psd')"></td>
+                            <td><input type="number" step="any" class="slope" oninput="handleRandomInput(this, 'slope')"></td>
+                            <td><button class="btn-icon" onclick="removeRandomRow(this)">X</button></td>
+                        </tr>
+                        <tr>
+                            <td><input type="number" step="any" class="freq" value="2000" oninput="handleRandomInput(this, 'freq')"></td>
+                            <td><input type="number" step="any" class="psd" value="0.0017" oninput="handleRandomInput(this, 'psd')"></td>
+                            <td><input type="number" step="any" class="slope" oninput="handleRandomInput(this, 'slope')"></td>
+                            <td><button class="btn-icon" onclick="removeRandomRow(this)">X</button></td>
+                        </tr>
+                    </tbody>
+                </table>
+                <button class="btn-add" onclick="addRandomRow()">＋ 新增轉折點</button>
+            </div>
+
+            <div class="panel">
+                <h3 class="est-title">📊 預估測試量值 (3σ)</h3>
+                <div class="est-grid">
+                    <div class="est-item">
+                        <div class="label">加速度 (Grms)</div>
+                        <div class="value-container"><span class="value" id="grms-val">--</span><span class="unit" id="unit-grms">g</span></div>
+                    </div>
+                    <div class="est-item">
+                        <div class="label">最大加速度 (Peak)</div>
+                        <div class="value-container"><span class="value" id="apeak-val">--</span><span class="unit" id="unit-apeak">G</span></div>
+                    </div>
+                    <div class="est-item">
+                        <div class="label">最大速度 (Peak)</div>
+                        <div class="value-container"><span class="value" id="vpeak-val">--</span><span class="unit">m/s</span></div>
+                    </div>
+                    <div class="est-item">
+                        <div class="label">最大位移 (P-P)</div>
+                        <div class="value-container"><span class="value" id="pp-val">--</span><span class="unit">mm</span></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="panel" style="width: 100%;">
+                <div id="randomPlotArea" class="plot-container"></div>
+            </div>
+        </div>
+    </div>
+
+
+    <script>
+        // ==========================================
+        // 通用邏輯
+        // ==========================================
+        function switchTab(tabId, btn) {
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById(tabId).classList.add('active');
+            btn.classList.add('active');
+            
+            // 由於 Plotly 在 display:none 狀態下可能渲染大小異常，切換時重新呼叫繪圖
+            if(tabId === 'tab-sine') { updateSineChart(); }
+            if(tabId === 'tab-random') { calculateAndPlotRandom(); }
+        }
+
+        const G_CONST = 9.80665;
+        const LOG2_10 = 10 * Math.log10(2); 
+
+        // ==========================================
+        // SINE 邏輯
+        // ==========================================
+        function addSineRow(freq = '', accel = '', disp = '') {
+            const tbody = document.getElementById('sineTbody');
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td><input type="number" class="freq" value="${freq}" step="any" oninput="updateSineChart()"></td>
+                <td><input type="number" class="accel" value="${accel}" step="any" placeholder="Auto" oninput="updateSineChart()"></td>
+                <td><input type="number" class="disp" value="${disp}" step="any" placeholder="Auto" oninput="updateSineChart()"></td>
+                <td><button class="btn-icon" onclick="this.parentElement.parentElement.remove(); updateSineChart();">X</button></td>
+            `;
+            tbody.appendChild(tr);
+        }
+
+        function loadSinePreset() {
+            const preset = document.getElementById('sinePreset').value;
+            if(!preset) return;
+            const tbody = document.getElementById('sineTbody');
+            tbody.innerHTML = ''; 
+            if (preset === 'photo') {
+                addSineRow(5, '', 2);     
+                addSineRow(100, 1, '');   
+                calculateSineLogic(); // 自動幫使用者算出照片範例的交接點
+            } else if (preset === 'mil_std') {
+                addSineRow(5, '', 5.08); 
+                addSineRow(500, 2, '');
+                calculateSineLogic();
+            } else {
+                addSineRow(10, '', 1.5);
+                addSineRow(50, 2, '');
+            }
+        }
+
+        function calculateSineLogic() {
+            const rows = document.querySelectorAll('#sineTbody tr');
+            let data = [];
+            
+            rows.forEach(row => {
+                data.push({
+                    freq: parseFloat(row.querySelector('.freq').value),
+                    accel: parseFloat(row.querySelector('.accel').value),
+                    disp: parseFloat(row.querySelector('.disp').value)
+                });
+            });
+
+            data = data.filter(d => !isNaN(d.freq));
+            data.sort((a, b) => a.freq - b.freq);
+            
+            let newData = [];
+            for (let i = 0; i < data.length - 1; i++) {
+                let p1 = fillMissingSineData(data[i]);
+                let p2 = fillMissingSineData(data[i+1]);
+                newData.push(p1);
+
+                // 交接點判斷 (低頻定位移，高頻定加速度)
+                if (p1.disp && !p1.accel_is_control && p2.accel && !p2.disp_is_control) {
+                    let fc = 22.288 * Math.sqrt(p2.accel / p1.disp);
+                    if (fc > p1.freq && fc < p2.freq) {
+                        newData.push({ freq: parseFloat(fc.toFixed(4)), accel: parseFloat(p2.accel.toFixed(4)), disp: parseFloat(p1.disp.toFixed(4)) });
+                    }
+                }
+            }
+            if(data.length > 0) newData.push(fillMissingSineData(data[data.length - 1]));
+
+            const tbody = document.getElementById('sineTbody');
+            tbody.innerHTML = '';
+            newData.forEach(d => addSineRow(d.freq, d.accel, d.disp));
+            updateSineChart();
+        }
+
+        function fillMissingSineData(point) {
+            let res = {...point};
+            if (!isNaN(res.freq)) {
+                if (!isNaN(res.disp) && isNaN(res.accel)) {
+                    res.accel = Math.pow(2 * Math.PI * res.freq, 2) * (res.disp / 2000) / G_CONST;
+                    res.accel = parseFloat(res.accel.toFixed(6));
+                    res.disp_is_control = true; 
+                } else if (!isNaN(res.accel) && isNaN(res.disp)) {
+                    res.disp = (res.accel * G_CONST * 2000) / Math.pow(2 * Math.PI * res.freq, 2);
+                    res.disp = parseFloat(res.disp.toFixed(6));
+                    res.accel_is_control = true;
+                }
+            }
+            return res;
+        }
+
+        function updateSineTime() {
+            const rows = document.querySelectorAll('#sineTbody tr');
+            let freqs = [];
+            rows.forEach(r => {
+                let f = parseFloat(r.querySelector('.freq').value);
+                if(!isNaN(f)) freqs.push(f);
+            });
+            
+            const timeDisplay = document.getElementById('sine-time-val');
+            if(freqs.length < 2) { timeDisplay.innerText = "--"; return; }
+            
+            let fMin = Math.min(...freqs);
+            let fMax = Math.max(...freqs);
+            let rate = parseFloat(document.getElementById('sweepRate').value);
+            let count = parseFloat(document.getElementById('sweepCount').value);
+            
+            if(fMin <= 0 || fMax <= fMin || isNaN(rate) || rate <= 0 || isNaN(count) || count <= 0) {
+                timeDisplay.innerText = "參數錯誤"; return;
+            }
+
+            // 計算 Octaves = log2(fMax / fMin)
+            let octaves = Math.log2(fMax / fMin);
+            // 時間(分鐘) = (Octaves / Rate) * 次數
+            let totalMins = (octaves / rate) * count;
+            
+            let hours = Math.floor(totalMins / 60);
+            let mins = Math.floor(totalMins % 60);
+            let secs = Math.round((totalMins * 60) % 60);
+            
+            let timeStr = "";
+            if(hours > 0) timeStr += `${hours} 小時 `;
+            timeStr += `${mins} 分 ${secs} 秒`;
+            timeDisplay.innerText = timeStr;
+        }
+
+        function updateSineChart() {
+            const rows = document.querySelectorAll('#sineTbody tr');
+            let data = [];
+            rows.forEach(row => {
+                let f = parseFloat(row.querySelector('.freq').value);
+                let a = parseFloat(row.querySelector('.accel').value);
+                if (!isNaN(f) && !isNaN(a)) data.push({ f: f, a: a });
+            });
+            data.sort((a, b) => a.f - b.f);
+
+            updateSineTime(); // 聯動更新時間
+
+            if(data.length < 2) { Plotly.purge('sinePlotArea'); return; }
+
+            const trace = { 
+                x: data.map(d=>d.f), y: data.map(d=>d.a), 
+                mode: 'lines+markers', type: 'scatter', 
+                line: {color: '#3b82f6', width: 3}, // Sine 使用藍色系區分
+                marker: {size: 8, color: '#ffffff', line: {color: '#3b82f6', width: 2}} 
+            };
+            const layout = {
+                title: false,
+                xaxis: { title: 'Frequency (Hz)', type: 'log', gridcolor: '#334155', tickfont: {color: '#cbd5e1'}, titlefont: {color: '#cbd5e1'} },
+                yaxis: { title: 'Acceleration (g Peak)', type: 'log', gridcolor: '#334155', tickfont: {color: '#cbd5e1'}, titlefont: {color: '#cbd5e1'} },
+                plot_bgcolor: '#1e293b', paper_bgcolor: '#1e293b', margin: { l: 50, r: 10, t: 10, b: 40 }, dragmode: 'pan'
+            };
+            Plotly.newPlot('sinePlotArea', [trace], layout, { displayModeBar: false, responsive: true });
+        }
+
+
+        // ==========================================
+        // RANDOM 邏輯 (保留你原有的 PSD 計算)
+        // ==========================================
+        let currentRandomUnit = 'G'; 
+        const RAND_PROFILES = {
+            "gr63_trans": [{f: 5, p: 0.001}, {f: 20, p: 0.01}, {f: 500, p: 0.01}],
+            "mil_cat4_truck": [{f: 10, p: 0.015}, {f: 40, p: 0.015}, {f: 500, p: 0.00015}],
+            "mil_cat24_min": [{f: 20, p: 0.04}, {f: 1000, p: 0.04}, {f: 2000, p: 0.01}],
+            "ista_3a_road": [{f: 1, p: 0.0001}, {f: 4, p: 0.01}, {f: 16, p: 0.01}, {f: 40, p: 0.001}, {f: 80, p: 0.001}, {f: 200, p: 0.00001}],
+            "ista_6_amazon": [{f: 1, p: 0.0001}, {f: 4, p: 0.01}, {f: 16, p: 0.01}, {f: 40, p: 0.001}, {f: 80, p: 0.001}, {f: 200, p: 0.00001}]
+        };
+
+        function loadRandomProfile() {
+            const pk = document.getElementById('profileSelect').value;
+            if (!pk || !RAND_PROFILES[pk]) return;
+            if (currentRandomUnit !== 'G') setRandomUnit('G');
+
+            const data = RAND_PROFILES[pk];
+            const tbody = document.querySelector('#dataTable tbody');
+            tbody.innerHTML = ''; 
+
+            data.forEach((pt, idx) => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td><input type="number" step="any" class="freq" value="${pt.f}" oninput="handleRandomInput(this, 'freq')"></td>
+                    <td><input type="number" step="any" class="psd" value="${pt.p}" oninput="handleRandomInput(this, 'psd')"></td>
+                    <td><input type="number" step="any" class="slope" oninput="handleRandomInput(this, 'slope')"></td>
+                    <td>${idx === 0 ? '' : `<button class="btn-icon" onclick="removeRandomRow(this)">X</button>`}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+            recalcRandomSlopes();
+        }
+
+        function setRandomUnit(u) {
+            if (currentRandomUnit === u) return; 
+            const isToM = (u === 'ms2');
+            const factor = isToM ? Math.pow(G_CONST, 2) : (1 / Math.pow(G_CONST, 2));
+            currentRandomUnit = u;
+
+            document.getElementById('btn-unit-g').classList.toggle('active', u === 'G');
+            document.getElementById('btn-unit-ms2').classList.toggle('active', u === 'ms2');
+            document.getElementById('th-psd').innerText = isToM ? 'Value ((m/s²)²/Hz)' : 'Value (g²/Hz)';
+            document.getElementById('unit-grms').innerText = isToM ? 'm/s²' : 'g';
+            document.getElementById('unit-apeak').innerText = isToM ? 'm/s²' : 'G';
+
+            document.querySelectorAll('#dataTable .psd').forEach(inp => {
+                let val = parseFloat(inp.value);
+                if (!isNaN(val)) inp.value = parseFloat((val * factor).toFixed(6)); 
+            });
+            calculateAndPlotRandom();
+        }
+
+        function handleRandomInput(el, type) {
+            const row = el.closest('tr');
+            const rows = Array.from(document.querySelectorAll('#dataTable tbody tr'));
+            const idx = rows.indexOf(row);
+            if (idx === -1) return;
+
+            if (type === 'slope' && idx > 0) {
+                const pFreq = parseFloat(rows[idx-1].querySelector('.freq').value);
+                const pPsd = parseFloat(rows[idx-1].querySelector('.psd').value);
+                const cFreq = parseFloat(row.querySelector('.freq').value);
+                const iSlope = parseFloat(row.querySelector('.slope').value);
+
+                if (pFreq > 0 && pPsd > 0 && cFreq > pFreq && !isNaN(iSlope)) {
+                    row.querySelector('.psd').value = (pPsd * Math.pow(cFreq / pFreq, iSlope / LOG2_10)).toFixed(6); 
+                }
+            }
+            recalcRandomSlopes(type, el);
+        }
+
+        function recalcRandomSlopes(type, aEl) {
+            const rows = document.querySelectorAll('#dataTable tbody tr');
+            document.getElementById('ptsInfo').innerText = `${rows.length} pts`;
+            if(rows.length > 0) {
+                let r0 = rows[0].querySelector('.slope');
+                r0.value = ''; r0.disabled = true; r0.placeholder = "N/A";
+            }
+            for (let i = 1; i < rows.length; i++) {
+                const f1 = parseFloat(rows[i-1].querySelector('.freq').value);
+                const w1 = parseFloat(rows[i-1].querySelector('.psd').value);
+                const f2 = parseFloat(rows[i].querySelector('.freq').value);
+                const w2 = parseFloat(rows[i].querySelector('.psd').value);
+                const slpInp = rows[i].querySelector('.slope');
+                slpInp.disabled = false; slpInp.placeholder = "";
+
+                if (f1 > 0 && w1 > 0 && f2 > f1 && w2 > 0) {
+                    if (document.activeElement !== slpInp || type !== 'slope') {
+                        slpInp.value = ((Math.log10(w2 / w1) / Math.log10(f2 / f1)) * LOG2_10).toFixed(2);
+                    }
+                } else if (document.activeElement !== slpInp) {
+                    slpInp.value = '';
+                }
+            }
+            calculateAndPlotRandom();
+        }
+
+        function addRandomRow() {
+            const tb = document.querySelector('#dataTable tbody');
+            const tr = document.createElement('tr');
+            tr.innerHTML = `<td><input type="number" step="any" class="freq" oninput="handleRandomInput(this, 'freq')"></td>
+                            <td><input type="number" step="any" class="psd" oninput="handleRandomInput(this, 'psd')"></td>
+                            <td><input type="number" step="any" class="slope" oninput="handleRandomInput(this, 'slope')"></td>
+                            <td><button class="btn-icon" onclick="removeRandomRow(this)">X</button></td>`;
+            tb.appendChild(tr);
+            recalcRandomSlopes();
+        }
+
+        function removeRandomRow(btn) { btn.closest('tr').remove(); recalcRandomSlopes(); }
+
+        function calculateAndPlotRandom() {
+            const rows = document.querySelectorAll('#dataTable tbody tr');
+            let data = [];
+            rows.forEach(r => {
+                const f = parseFloat(r.querySelector('.freq').value);
+                const p = parseFloat(r.querySelector('.psd').value);
+                if (!isNaN(f) && !isNaN(p)) data.push({f: f, p: p});
+            });
+            data.sort((a, b) => a.f - b.f);
+            if (data.length < 2) { Plotly.purge('randomPlotArea'); return; }
+
+            let aA=0, aV=0, aD=0;
+            for (let i = 0; i < data.length - 1; i++) {
+                let f1=data[i].f, w1=data[i].p, f2=data[i+1].f, w2=data[i+1].p;
+                if (w1<=0 || w2<=0 || f1<=0 || f2<=f1) continue;
+                let m = Math.log(w2/w1) / Math.log(f2/f1);
+                
+                if (Math.abs(m+1)<0.0001) aA += w1*f1*Math.log(f2/f1); else aA += (w2*f2-w1*f1)/(m+1);
+                let w1m = (currentRandomUnit === 'G') ? w1*Math.pow(G_CONST,2) : w1;
+                if (Math.abs(m-1)<0.0001) aV += (w1m/f1)*Math.log(f2/f1); else aV += (w1m*Math.pow(f1,-m)/(m-1))*(Math.pow(f2,m-1)-Math.pow(f1,m-1));
+                if (Math.abs(m-3)<0.0001) aD += (w1m/Math.pow(f1,3))*Math.log(f2/f1); else aD += (w1m*Math.pow(f1,-m)/(m-3))*(Math.pow(f2,m-3)-Math.pow(f1,m-3));
+            }
+
+            let grms = Math.sqrt(Math.max(0, aA));
+            let vrms = Math.sqrt(Math.max(0, aV / (4*Math.pow(Math.PI,2))));
+            let drms = Math.sqrt(Math.max(0, aD / (16*Math.pow(Math.PI,4))));
+
+            document.getElementById('grms-val').innerText = grms.toFixed(3);
+            document.getElementById('apeak-val').innerText = (3 * grms).toFixed(3);
+            document.getElementById('vpeak-val').innerText = (3 * vrms).toFixed(3);
+            document.getElementById('pp-val').innerText = (6 * drms * 1000).toFixed(3);
+
+            const tr = { x: data.map(d=>d.f), y: data.map(d=>d.p), mode: 'lines+markers', type: 'scatter', line: {color: '#00d284', width: 3}, marker: {size: 8, color: '#ffffff', line: {color: '#00d284', width: 2}} };
+            const lay = { title: false,
+                xaxis: { title: 'Frequency (Hz)', type: 'log', gridcolor: '#334155', tickfont: {color: '#cbd5e1'}, titlefont: {color: '#cbd5e1'} },
+                yaxis: { title: currentRandomUnit==='G'?'g²/Hz':'(m/s²)²/Hz', type: 'log', gridcolor: '#334155', tickfont: {color: '#cbd5e1'}, titlefont: {color: '#cbd5e1'} },
+                plot_bgcolor: '#1e293b', paper_bgcolor: '#1e293b', margin: { l: 50, r: 10, t: 10, b: 40 }, dragmode: 'pan'
+            };
+            Plotly.newPlot('randomPlotArea', [tr], lay, { displayModeBar: false, responsive: true });
+        }
+
+        // 初始化
+        window.onload = () => {
+            loadSinePreset(); // 載入 Sine 預設
+            recalcRandomSlopes(); // 初始化 Random
+        };
+    </script>
+</body>
+</html>
