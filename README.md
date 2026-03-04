@@ -32,12 +32,12 @@ This is a web-based auxiliary tool designed specifically for Reliability Enginee
 ---
 
 ## 📖 使用說明 | Usage
-1. 前往 [Live Demo 連結](https://LamChamg.github.io/vibration-calculator/)。
+1. 前往 [Live Demo 連結](https://LamChang0416.github.io/vibration-calculator/)。
 2. 選擇 **Sine** 或 **Random** 標籤頁。
 3. 載入預設範例或手動輸入頻率點。
 4. 點擊「自動計算」即可獲得完整曲線與預估值。
 
-1. Visit the [Live Demo Link](https://LamChamg.github.io/vibration-calculator/).
+1. Visit the [Live Demo Link](https://LamChang0416.github.io/vibration-calculator/).
 2. Select the **Sine** or **Random** tab.
 3. Load a preset or manually input frequency points.
 4. Click "Calculate" to get the full profile and estimated values.
